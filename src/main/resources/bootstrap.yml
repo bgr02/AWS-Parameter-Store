@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: demo
+
+aws:
+  paramstore:
+    prefix: /test
+    region: ap-northeast-2

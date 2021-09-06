@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--60초 주기마다 로그파일(logback-spring.xml)이 바뀌었는지 검사하고 바뀌었으면 프로그램 갱신-->
+<configuration scan="true" scanPeriod="60 seconds">
+    <!--application.yml에서 지정한 profile이 dev인 경우 logback-property-dev.properties의 설정값들을 <property> 태그에서 사용-->
+    <!--    <springProfile name="dev">-->
+    <!--        <property resource="logback-dev.properties"/>-->
+    <!--    </springProfile>-->
+    <!--    &lt;!&ndash;application.yml에서 지정한 profile이 prod인 경우 logback-property-prod.properties의 설정값들을 <property> 태그에서 사용&ndash;&gt;-->
+    <!--    <springProfile name="prod">-->
+    <!--        <property resource="logback-prod.properties"/>-->
+    <!--    </springProfile>-->
+
+    <!--위의 주석은 이전 버전이고 현재 라인이 최신 버전: property 태그를 springProfile 태그 내부에서 사용할 수 없으므로 profile 별로 파일을 나누어서 속성값을 관리할 수 없다.
+    따라서 하나의 파일로 합쳐서 속성값을 관리하도록 변경함. 참고로 if문 안에서 property 태그를 사용해도 에러가 나서 사용할 수 없음-->
+    <property resource="logback-property.properties"/>
+
+    <!--application.yml에서 logging.level.root에 대한 값을 가져와서 LOG_LEVEL이라는 이름으로 사용-->
+    <!--<springProperty scope="context" name="LOG_LEVEL" source="logging.level.root"/>-->
+
+    <!--logback-dev.properties 또는 logback-property-prod.properties에서 값을 찾아서 사용-->
+    <!--위의 주석은 이전 버전이고 현재 라인이 최신 버전: logback-property.properties에서 값을 찾아서 사용, properties 파일에서만 값을 읽어오고 yml에서는 값을 읽지 못함-->
+    <property name="LOG_DEV_PATH" value="${log.config.devPath}"/>
+    <property name="LOG_PROD_PATH" value="${log.config.prodPath}"/>
+    <property name="LOG_ERROR_PATH" value="${log.config.errorPath}"/>
+    <property name="LOG_DEV_FILE_NAME" value="${log.config.devlog.filename}"/>
+    <property name="LOG_PROD_FILE_NAME" value="${log.config.prodlog.filename}"/>
+    <property name="ERR_LOG_FILE_NAME" value="${log.config.errlog.filename}"/>
+    <property name="LOG_CONSOLE_PATTERN" value="${log.config.console.pattern}"/>
+    <property name="LOG_COMMON_PATTERN" value="${log.config.common.pattern}"/>
+
+    <!--콘솔에 표시할 로그에 대한 패턴 지정-->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- 출력패턴 설정-->
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${LOG_CONSOLE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!--로그를 지정된 패턴과 지정한 날짜 형식으로 파일로 저장-->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DEV_PATH}/${LOG_DEV_FILE_NAME}.log</file>
+        <!-- 출력패턴 설정-->
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${LOG_COMMON_PATTERN}</pattern>
+        </encoder>
+        <!--파일은 최대 10MB까지 저장되며 30일이 지나면 자동으로 삭제-->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DEV_PATH}/${LOG_DEV_FILE_NAME}.%d{yyyy-MM-dd}_%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>10MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!--에러 로그에 대해서 따로 파일로 저장-->
+    <appender name="ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>error</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <file>${LOG_ERROR_PATH}/${ERR_LOG_FILE_NAME}.log</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${LOG_COMMON_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_ERROR_PATH}/${ERR_LOG_FILE_NAME}.%d{yyyy-MM-dd}_%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>10MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>60</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!--application.yml에서 지정한 profile이 dev인 경우 해당 로그 설정이 적용-->
+    <springProfile name="dev">
+        <!-- root level을 지정해준다. 여기서 root level을 지정해주면 ref="CONSOLE", ref="FILE"은 debug 레벨로 로깅을 진행한다.
+         ref="ERROR"는 내부에서 로깅 레벨을 따로 지정해놨기 때문에 debug로 지정해도 적용되지 않는다. 만약 application.yml에서
+         logging.level.root를 info로 지정하는 경우 아무리 여기서 root level="debug"로 지정해도 해당 설정은 무시되고 무조건
+         logging.level.root의 설정이 적용된다.
+         -->
+        <root level="info">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+            <appender-ref ref="ERROR"/>
+        </root>
+    </springProfile>
+
+    <!--application.yml에서 지정한 profile이 prod인 경우 해당 로그 설정이 적용-->
+    <springProfile name="prod">
+        <root level="info">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+            <appender-ref ref="ERROR"/>
+        </root>
+    </springProfile>
+</configuration>
