@@ -1,6 +1,6 @@
-spring:
-  profiles:
-    active: dev #dev, prod
+#spring:
+  #profiles:
+    #active: dev #dev, prod
 
 cloud:
   aws:
