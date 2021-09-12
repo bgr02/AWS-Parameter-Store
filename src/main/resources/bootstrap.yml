@@ -4,5 +4,6 @@ spring:
 
 aws:
   paramstore:
+    enabled: false
     prefix: /test
     region: ap-northeast-2
