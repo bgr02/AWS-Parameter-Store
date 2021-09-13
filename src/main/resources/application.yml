@@ -1,10 +1,10 @@
-# spring:
-#   profiles:
-#     active: dev #dev, prod
+spring:
+  profiles:
+    active: default #default, dev, prod
 
-# cloud:
-#   aws:
-#     region:
-#       static: ap-northeast-2
-#     stack:
-#       auto: false
+#cloud:
+#  aws:
+#    region:
+#      static: ap-northeast-2
+#    stack:
+#      auto: false
